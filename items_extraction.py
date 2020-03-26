@@ -6,7 +6,7 @@ from fuzzywuzzy import fuzz
 import time
 import sys
 
-data_path = sys.argv[1]
+#data_path = sys.argv[1]
 
 def read_txt(f_path):
     f = open(f_path, encoding="utf8")
@@ -21,7 +21,7 @@ def remove_stopword(text):
     tokens = word_tokenize(text)
     return ' '.join(word for word in tokens if word not in stopwords)
 
-df = pd.read_csv(data_path)
+df = pd.read_csv('chotot.csv')
 df = df.drop(['price', 'acreage', 'bathroom', 'bedroom', 'address', 'time'], axis=1)
 arr_description = []
 set_abbreviate = { 'phòng ngủ': ['pn', 'phn'],
