@@ -4,6 +4,9 @@ import re
 from underthesea import sent_tokenize, word_tokenize
 from fuzzywuzzy import fuzz
 import time
+import sys
+
+data_path = sys.argv[1]
 
 def read_txt(f_path):
     f = open(f_path, encoding="utf8")
@@ -16,9 +19,9 @@ stopwords = read_txt('stopwords.txt')
 # Remove stopwords
 def remove_stopword(text):
     tokens = word_tokenize(text)
-    return " ".join(word for word in tokens if word not in stopwords)
+    return ' '.join(word for word in tokens if word not in stopwords)
 
-df = pd.read_csv('chotot.csv')
+df = pd.read_csv(data_path)
 df = df.drop(['price', 'acreage', 'bathroom', 'bedroom', 'address', 'time'], axis=1)
 arr_description = []
 set_abbreviate = { 'phòng ngủ': ['pn', 'phn'],
@@ -37,7 +40,12 @@ set_abbreviate = { 'phòng ngủ': ['pn', 'phn'],
             'công viên': ['cv', 'cvien'],
             'triệu /' : ['tr/', ' tr /', 'tr '],
             'phường' : [' p ', ' ph '],
-            'quận' : [' q ', ' qu ']
+            'quận' : [' q ', ' qu '],
+            ' một ' : [' 1 '],
+            ' hai ' : [' 2 '],
+            ' ba ' : [' 3 '],
+            ' bốn ' : [' 4 '],
+            ' năm ' : [' 5 ']
             }
 
 def replace_abbreviate(s):
@@ -52,7 +60,7 @@ for index in range(len(df.index)):
     arr = [re.sub('[^0-9A-Za-z ạảãàáâậầấẩẫăắằặẳẵóòọõỏôộổỗồốơờớợởỡéèẻẹẽêếềệểễúùụủũưựữửừứíìịỉĩýỳỷỵỹđ/%,]', ' ', line) for line in arr]
     arr = [re.sub('m2', ' m2', line) for line in arr]
     arr = [" ".join(line.split()) for line in arr]
-    arr_description.append(". ".join(arr))
+    arr_description.append(remove_stopword(". ".join(arr)))
 
 df = df.assign(description_2 = arr_description)
 
@@ -64,14 +72,11 @@ def check(sent):
     t = ''
     code = ''
     while len(words) > 0:
-        for w in words:
-            t = t + ' ' + w
-        t = " ".join(t.split())
-        print(t)
-        if any(fuzz.token_sort_ratio(t, item) >= 85 for item in items):
+        t = " ".join(words)
+        if any(fuzz.UQRatio(t, item) > 80 for item in items):
             code = 'item'
             break
-        elif any(fuzz.token_sort_ratio(t, place) >= 85 for place in places):
+        elif any(fuzz.UQRatio(t, place) > 80 for place in places):
             code = 'place'
             break
         else:
@@ -114,11 +119,12 @@ def extract_info(text):
 
 places_list = []
 items_list = []
-start = time.time()
-for i in range (50):
+
+for i in range (len(df)):
     text = df['description_2'][i]
     places_result, items_result = extract_info(text)
     items_list.append(items_result)
     places_list.append(places_result)
-end = time.time()
-print(end-start)
+
+
+
